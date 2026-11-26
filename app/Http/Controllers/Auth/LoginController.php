@@ -33,7 +33,11 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt([
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+            'is_admin' => true,
+        ], $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
 
             throw ValidationException::withMessages([

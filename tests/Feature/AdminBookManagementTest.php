@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Book;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -18,11 +19,76 @@ class AdminBookManagementTest extends TestCase
         $this->get('/admin')->assertRedirect(route('login'));
     }
 
+    public function test_guests_are_redirected_from_nested_admin_routes(): void
+    {
+        $this->get(route('admin.buku.index'))->assertRedirect(route('login'));
+        $this->post(route('admin.import.bguide'))->assertRedirect(route('login'));
+    }
+
     public function test_non_admin_users_cannot_open_the_dashboard(): void
     {
         $user = User::factory()->create(['is_admin' => false]);
 
         $this->actingAs($user)->get('/admin')->assertForbidden();
+    }
+
+    public function test_non_admin_users_cannot_open_nested_admin_routes(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+
+        $this->actingAs($user)->get(route('admin.buku.index'))->assertForbidden();
+        $this->actingAs($user)->post(route('admin.import.bguide'))->assertForbidden();
+    }
+
+    public function test_non_admin_users_cannot_sign_in(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
+    public function test_admin_users_can_sign_in(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->post(route('login'), [
+            'email' => $admin->email,
+            'password' => 'password',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_login_page_does_not_display_demo_account_details(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertDontSee('Akun demo lokal')
+            ->assertDontSee('admin@arsip.test');
+    }
+
+    public function test_users_cannot_set_admin_role_through_mass_assignment(): void
+    {
+        $user = User::query()->create([
+            'name' => 'User Tanpa Hak Admin',
+            'email' => 'regular-user@example.test',
+            'password' => 'a-strong-password',
+            'is_admin' => true,
+        ]);
+
+        $this->assertFalse($user->fresh()->is_admin);
+    }
+
+    public function test_database_seeder_does_not_create_a_demo_admin(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertDatabaseMissing('users', ['email' => 'admin@arsip.test']);
     }
 
     public function test_admin_cannot_upload_a_local_pdf(): void

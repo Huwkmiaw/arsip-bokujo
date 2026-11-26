@@ -26,7 +26,7 @@
                 <div>
                     <label for="email" class="label">Email</label>
                     <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
-                           class="field" placeholder="admin@arsip.test">
+                           class="field" placeholder="nama@contoh.com">
                     @error('email')
                         <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
                     @enderror
@@ -48,10 +48,6 @@
                 <button type="submit" class="btn btn-primary w-full">Masuk</button>
             </form>
 
-            <div class="mt-5 rounded-lg border border-dashed border-line bg-paper/70 px-3 py-2.5 text-[11px] leading-relaxed text-ink-soft">
-                <span class="font-semibold text-ink">Akun demo lokal</span><br>
-                admin@arsip.test · admin12345
-            </div>
         </div>
 
         <p class="mt-5 text-center text-xs text-ink-soft">
