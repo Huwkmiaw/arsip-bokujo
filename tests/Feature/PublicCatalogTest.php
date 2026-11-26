@@ -25,6 +25,16 @@ class PublicCatalogTest extends TestCase
             ->assertDontSee('Digital Archive Books Hero Banner');
     }
 
+    public function test_asset_urls_use_https_when_request_is_forwarded_from_vercel(): void
+    {
+        $this->withHeaders([
+            'X-Forwarded-Host' => 'archive.test',
+            'X-Forwarded-Proto' => 'https',
+        ])->get('/')
+            ->assertOk()
+            ->assertSee('https://archive.test/build/assets/', false);
+    }
+
     public function test_shelves_show_three_books_on_mobile_and_five_on_desktop(): void
     {
         foreach (range(1, 7) as $number) {
