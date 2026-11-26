@@ -1,7 +1,25 @@
 <?php
 
 use Illuminate\Support\Str;
-use Pdo\Mysql;
+
+$tidbHost = env('TIDB_HOST');
+$mysqlHost = env('DB_HOST', $tidbHost ?: '127.0.0.1');
+$usesTiDB = $tidbHost !== null && $mysqlHost === $tidbHost;
+$mysqlOptions = [];
+
+if (extension_loaded('pdo_mysql')) {
+    $sslCaAttribute = defined('Pdo\Mysql::ATTR_SSL_CA')
+        ? constant('Pdo\Mysql::ATTR_SSL_CA')
+        : PDO::MYSQL_ATTR_SSL_CA;
+    $sslVerifyServerCertAttribute = defined('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT')
+        ? constant('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT')
+        : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT;
+
+    $mysqlOptions = array_filter([
+        $sslCaAttribute => env('MYSQL_ATTR_SSL_CA', $usesTiDB ? '/etc/ssl/certs/ca-certificates.crt' : null),
+        $sslVerifyServerCertAttribute => env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT', $usesTiDB ? true : null),
+    ], static fn ($value): bool => $value !== null);
+}
 
 return [
 
@@ -17,7 +35,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', $tidbHost ? 'mysql' : 'sqlite'),
 
     /*
     |--------------------------------------------------------------------------
@@ -47,11 +65,11 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'host' => $mysqlHost,
+            'port' => env('DB_PORT', env('TIDB_PORT', '3306')),
+            'database' => env('DB_DATABASE', env('TIDB_DATABASE', 'laravel')),
+            'username' => env('DB_USERNAME', env('TIDB_USER', 'root')),
+            'password' => env('DB_PASSWORD', env('TIDB_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
@@ -59,9 +77,7 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $mysqlOptions,
         ],
 
         'mariadb' => [
@@ -79,9 +95,7 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'options' => $mysqlOptions,
         ],
 
         'pgsql' => [

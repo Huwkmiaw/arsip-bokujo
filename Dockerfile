@@ -12,7 +12,10 @@ RUN npm run build
 
 FROM dunglas/frankenphp:1-php8.4-bookworm AS app
 
-RUN install-php-extensions pdo_mysql intl zip
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && install-php-extensions pdo_mysql intl zip
 
 WORKDIR /app
 
