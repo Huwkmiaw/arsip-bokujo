@@ -30,6 +30,7 @@ RUN composer install \
     --prefer-dist
 
 COPY . .
+COPY Caddyfile /etc/frankenphp/Caddyfile
 COPY --from=assets /app/public/build ./public/build
 
 RUN mkdir -p \
